@@ -7,13 +7,22 @@
         active-text="自动滚动"
         inactive-text="停止滚动"
       />
+      <el-switch
+        v-model="isPageMode"
+        active-text="分页模式"
+        inactive-text="连续模式"
+        style="margin-left: 20px"
+      />
     </div>
     <el-table-scroll
+      ref="tableScrollRef"
       :data="tableData"
       :height="400"
       :auto-scroll="isAutoScroll"
-      :step="1"
-      :scrollSpeed="50"
+      :page-mode="isPageMode"
+      :scroll-speed="50"
+      :step="3"
+      :page-interval="1000"
       style="width: 100%"
       @selection-change="handleSelectionChange"
     >
@@ -30,6 +39,7 @@ import { ref } from "vue";
 import ElTableScroll from "@/components/ElTableScroll.vue";
 
 const isAutoScroll = ref(false); // 控制是否自动滚动
+const isPageMode = ref(false);  // 控制滚动模式
 
 // 示例数据
 const tableData = ref(

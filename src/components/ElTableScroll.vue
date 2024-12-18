@@ -17,6 +17,7 @@ import { ElTable } from "element-plus";
 
 const tableRef = ref(null);
 const isScrolling = ref(false);
+const currentPage = ref(0);
 
 const props = defineProps({
   height: {
@@ -29,16 +30,101 @@ const props = defineProps({
   },
   scrollSpeed: {
     type: Number,
-    default: 100,
+    default: 100,  // 连续滚动时的速度
   },
   step: {
     type: Number,
-    default: 1,
+    default: 1,    // 连续滚动时的步长
   },
+  // 是否使用分页模式
+  pageMode: {
+    type: Boolean,
+    default: false,
+  },
+  // 分页模式下的翻页间隔
+  pageInterval: {
+    type: Number,
+    default: 3000,
+  }
 });
 
 let scrollTimer = null;
 let isHovered = false;
+
+// 计算总页数和每页高度
+const getScrollInfo = () => {
+  if (!tableRef.value?.$el) return { totalPages: 0, pageHeight: 0 };
+  const demo = tableRef.value.$refs.bodyWrapper.getElementsByClassName(
+    "el-scrollbar__wrap"
+  )[0];
+  if (!demo) return { totalPages: 0, pageHeight: 0 };
+  
+  const pageHeight = demo.clientHeight;
+  const totalHeight = demo.scrollHeight;
+  return {
+    totalPages: Math.ceil(totalHeight / pageHeight),
+    pageHeight
+  };
+};
+
+// 连续滚动模式
+const continuousScroll = (demo) => {
+  const tableScroll = ref(true);
+  
+  demo.addEventListener("mouseover", () => {
+    tableScroll.value = false;
+  });
+  demo.addEventListener("mouseout", () => {
+    tableScroll.value = true;
+  });
+
+  scrollTimer = setInterval(() => {
+    if (tableScroll.value) {
+      const num = demo.scrollTop + props.step;
+      demo.scrollTo({
+        top: num,
+        behavior: "smooth",
+      });
+      
+      // 当滚动到底部时
+      if (demo.clientHeight + demo.scrollTop >= demo.scrollHeight) {
+        demo.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }
+    }
+  }, props.scrollSpeed);
+};
+
+// 分页滚动模式
+const pageScroll = (demo) => {
+  const tableScroll = ref(true);
+  
+  demo.addEventListener("mouseover", () => {
+    tableScroll.value = false;
+  });
+  demo.addEventListener("mouseout", () => {
+    tableScroll.value = true;
+  });
+
+  scrollTimer = setInterval(() => {
+    if (tableScroll.value) {
+      const { totalPages, pageHeight } = getScrollInfo();
+      if (totalPages <= 1) return;
+
+      // 计算下一页的位置
+      currentPage.value = (currentPage.value + 1) % totalPages;
+      const nextPosition = currentPage.value * pageHeight;
+
+      // 滚动到下一页
+      demo.scrollTo({
+        top: nextPosition,
+        behavior: "smooth",
+      });
+    }
+  }, props.pageInterval);
+};
 
 // 开始自动滚动
 const startScroll = () => {
@@ -47,46 +133,17 @@ const startScroll = () => {
   stopScroll();
 
   nextTick(() => {
-    const demo =
-      tableRef.value.$refs.bodyWrapper.getElementsByClassName(
-        "el-scrollbar__wrap"
-      )[0];
-    const tableScroll = ref(true);
-    
-    demo.addEventListener("mouseover", () => {
-      tableScroll.value = false;
-    });
-    demo.addEventListener("mouseout", () => {
-      tableScroll.value = true;
-    });
+    const demo = tableRef.value.$refs.bodyWrapper.getElementsByClassName(
+      "el-scrollbar__wrap"
+    )[0];
+    if (!demo) return;
 
-    // 使用 scrollTimer 存储定时器
-    scrollTimer = setInterval(() => {
-      if (tableScroll.value) {
-        const currentPosition = demo.scrollTop;
-        const maxScroll = demo.scrollHeight - demo.clientHeight;
-
-        // 如果已经到底部或即将到底部
-        if (currentPosition >= maxScroll - props.step) {
-          tableScroll.value = false; // 暂停滚动
-          demo.scrollTo({
-            top: 0,
-            behavior: "smooth",
-          });
-          // 等待回到顶部的动画完成后再继续
-          setTimeout(() => {
-            tableScroll.value = true;
-          }, 800);
-        } else {
-          demo.scrollTo({
-            top: currentPosition + props.step,
-            behavior: "smooth",
-            // 时间
-            duration: 1000,
-          });
-        }
-      }
-    }, props.scrollSpeed);
+    // 根据模式选择滚动方式
+    if (props.pageMode) {
+      pageScroll(demo);
+    } else {
+      continuousScroll(demo);
+    }
   });
 };
 
@@ -97,6 +154,7 @@ const stopScroll = () => {
     scrollTimer = null;
   }
   isScrolling.value = false;
+  currentPage.value = 0;
 };
 
 // 鼠标移入时暂停滚动
@@ -126,9 +184,49 @@ watch(
   { immediate: true }
 );
 
+// 获取当前应该在第几页
+const getCurrentPageFromScroll = (scrollTop, pageHeight) => {
+  return Math.floor(scrollTop / pageHeight);
+};
+
+// 修改监听滚动事件的部分
+watch(() => tableRef.value, (newVal) => {
+  if (newVal) {
+    const demo = newVal.$refs.bodyWrapper.getElementsByClassName(
+      "el-scrollbar__wrap"
+    )[0];
+    
+    // 移除之前的事件监听（如果有的话）
+    demo?.removeEventListener('scroll', handleScroll);
+    
+    // 添加新的事件监听
+    demo?.addEventListener('scroll', handleScroll);
+  }
+}, { immediate: true });
+
+// 处理滚动事件
+const handleScroll = () => {
+  if (!isScrolling.value && tableRef.value) {
+    const demo = tableRef.value.$refs.bodyWrapper.getElementsByClassName(
+      "el-scrollbar__wrap"
+    )[0];
+    if (demo) {
+      const { pageHeight } = getScrollInfo();
+      currentPage.value = getCurrentPageFromScroll(demo.scrollTop, pageHeight);
+    }
+  }
+};
+
 // 组件卸载时清理
 onUnmounted(() => {
   stopScroll();
+  // 移除滚动事件监听
+  if (tableRef.value) {
+    const demo = tableRef.value.$refs.bodyWrapper.getElementsByClassName(
+      "el-scrollbar__wrap"
+    )[0];
+    demo?.removeEventListener('scroll', handleScroll);
+  }
 });
 
 defineExpose({
@@ -145,6 +243,8 @@ defineExpose({
   startScroll,
   stopScroll,
   isScrolling,
+  getCurrentPage: () => currentPage.value,
+  getTotalPages: () => totalPages.value,
 });
 </script>
 
