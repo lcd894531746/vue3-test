@@ -1,6 +1,6 @@
 <template>
   <div>
     <!-- <echarts /> -->
-    111121321
+    1111213212342
   </div>
 </template>
