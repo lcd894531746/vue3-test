@@ -1,6 +1,6 @@
 <template>
   <div>
     <!-- <echarts /> -->
-    是
+    是2312312
   </div>
 </template>
