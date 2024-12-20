@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import Index from '../views/Index.vue'
 import Home from '../views/Home.vue'
 import Table from '../views/Table.vue'
+import Echarts from '../views/Echarts.vue'
 
 const routes = [
   {
@@ -24,6 +25,14 @@ const routes = [
         component: Table,
         meta: {
           title: 'table页面'
+        }
+      },
+      {
+        path: '/echarts',
+        name: 'echarts',
+        component: Echarts,
+        meta: {
+          title: 'echarts页面'
         }
       }
     ]

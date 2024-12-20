@@ -1,0 +1,58 @@
+// 绘制面
+var polygon = new BMapGL.Polygon(
+  // ... 坐标点保持不变 ...
+  {
+    // ... 样式配置保持不变 ...
+  }
+);
+polygon.addEventListener("edit", function (e) {
+  console.log("polygon edit", e);
+});
+polygon.addEventListener("editend", function (e) {
+  console.log("polygon edit ended", e);
+  console.log("polygon new points:", polygon.getPath());
+});
+map.addOverlay(polygon);
+
+// 绘制线
+var polyline = new BMapGL.Polyline(
+  // ... 坐标点保持不变 ...
+  {
+    // ... 样式配置保持不变 ...
+  }
+);
+polyline.addEventListener("edit", function () {
+  console.log("polyline edit");
+});
+polyline.addEventListener("editend", function (e) {
+  console.log("polyline edit ended", e);
+  console.log("polyline new points:", polyline.getPath());
+});
+map.addOverlay(polyline);
+
+// 绘制圆
+var circle = new BMapGL.Circle(new BMapGL.Point(116.404, 39.915), 500, {
+  // ... 样式配置保持不变 ...
+});
+circle.addEventListener("edit", function () {
+  console.log("circle edit");
+});
+circle.addEventListener("editend", function (e) {
+  console.log("circle edit ended", e);
+  console.log("circle new center:", circle.getCenter());
+  console.log("circle new radius:", circle.getRadius());
+});
+map.addOverlay(circle);
+
+// 绘制镂空面
+var polyHole = new BMapGL.Polygon(
+  // ... 坐标点保持不变 ...
+  {
+    // ... 样式配置保持不变 ...
+  }
+);
+polyHole.addEventListener("editend", function (e) {
+  console.log("polyHole edit ended", e);
+  console.log("polyHole new points:", polyHole.getPath());
+});
+map.addOverlay(polyHole);
