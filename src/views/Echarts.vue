@@ -16,7 +16,7 @@ import EchartsComponent from "@/components/EchartsComponents.vue";
 
 const chartRef = ref(null);
 
-const currentType = ref("line-smooth");
+const currentType = ref("pie-custom");
 const customOptions = ref({});
 let originalOption = null;
 
